@@ -1,0 +1,39 @@
+{
+   "admin/services/boinc": {
+      "title": "Boinc",
+      "order": "90",
+      "action": {
+         "type": "alias",
+         "path": "admin/services/boinc/tasks"
+      },
+      "depends": {
+         "fs": {
+            "/usr/bin/boinc-luci": "executable"
+         }
+      }
+   },
+   "admin/services/boinc/projects": {
+      "title": "Projects",
+      "order": 10,
+      "action": {
+         "type": "view",
+         "path": "boinc/projects"
+      }
+   },    
+   "admin/services/boinc/tasks": {
+      "title": "Tasks",
+      "order": 20,
+      "action": {
+         "type": "view",
+         "path": "boinc/tasks"
+      }
+   },
+   "admin/services/boinc/statistics": {
+      "title": "Statistics",
+      "order": 30,
+      "action": {
+         "type": "view",
+         "path": "boinc/statistics"
+      }
+   } 
+}

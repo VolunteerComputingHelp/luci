@@ -1,0 +1,14 @@
+{
+   "luci-app-boinc-manger":
+   {
+      "decription": "Grant access to local Boinc-client",
+      "read":
+      {
+         "cgi-io": [ "exec" ],
+         "file":
+         {
+            "/usr/bin/boinc-luci": ["exec"]
+         }
+      }
+   }
+}
