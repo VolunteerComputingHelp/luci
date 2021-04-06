@@ -9,8 +9,10 @@
 
 using namespace std;
 
-const string taskStates[] = {"New", "Downloading", "Ready to start", "Compute error", "Uploading", "Ready to report", "Aborted", "Upload failed"};
-const string activeTaskStates[] = {"Ready to start", "Running", "Exited", "Signaled", "Failed", "Aborted", "Coudn't start", "Exiting", "Suspended", "Downloading"};
+const std::string taskStates[] = {"New", "Downloading", "Ready to start", "Compute error", "Uploading", "Ready to report", "Aborted", "Upload failed"};
+const std::string activeTaskStates[] = {"Ready to start", "Running", "Exited", "Signaled", "Failed", "Aborted", "Coudn't start", "Exiting", "Suspended", "Downloading"};
+// Error messages set by BOINC
+std::string msg;
 
 ostringstream attachProject(RPC_CLIENT* rpc, const char* url, const char* user, const char* pw) {
    ostringstream retVal;
@@ -47,6 +49,9 @@ ostringstream attachProject(RPC_CLIENT* rpc, const char* url, const char* user, 
          if ( attachReturnState == BOINC_SUCCESS ) {
             retVal << BOINC_SUCCESS;
          }
+	 else {
+            retVal << 99;
+	 }
      }
      else {
         retVal << accOut.error_num;
@@ -272,47 +277,74 @@ ostringstream updateTasks(RPC_CLIENT* rpc) {
 }
 
 int main(int argc, char** argv) {
-   RPC_CLIENT rpc;
-   char passwd_buf[256];
 
+   if (     1>=argc
+        || (0==strcmp(argv[1],"-h") || 0==strcmp(argv[1],"--help") || 0==strcmp(argv[1],"help")) ) {
+      cerr << "Usage: boinc-luci <command> <argument>" << endl
+           << endl
+	   << "This tool serves as a bridge for LuCI to communicate with BOINC." << endl
+           << endl
+           << "boinc-luci (-h|--help|help)  - shows this help" << endl
+           << "boinc-luci get_projects" << endl
+           << "boinc-luci reqest_project - extra arg" << endl
+           << "boinc-luci get_tasks" << endl
+           << "boinc-luci update_tasks" << endl
+           << "boinc-luci get_statistics" << endl
+           << "boinc-luci attach_project expects three args" << endl;
+      return(-1);
+   }
+
+   RPC_CLIENT rpc;
+
+   char passwd_buf[256];
    safe_strcpy(passwd_buf, "");
 
-   rpc.init(NULL);
-
-   read_gui_rpc_password(passwd_buf);
-   if ( strlen(passwd_buf) > 0 ) {
-      rpc.authorize((const char*)passwd_buf);
-   }
-   else {
-      chdir("/opt/boinc/");
-      read_gui_rpc_password(passwd_buf);
-      if (strlen(passwd_buf) > 0) {
-         rpc.authorize((const char*)passwd_buf);
-      }
+   int rpc_failure = rpc.init(NULL,0);
+   if (rpc_failure) {
+      cout << "BOINC error message (" << rpc_failure << "): " << "uknown error by rpc.init" << endl;
+      return(rpc_failure);
    }
 
+   chdir("/opt/boinc/");
+   rpc_failure = read_gui_rpc_password(passwd_buf,msg);
+   if (rpc_failure) {
+      cout << "BOINC error message (" << rpc_failure << "): " << msg << endl;
+      return(rpc_failure);
+   }
+   rpc_failure = rpc.authorize((const char*)passwd_buf);
+   if (rpc_failure) {
+      cout << "BOINC error message (" << rpc_failure << "): " << "unknown error upon rpc.authorize" << endl;
+      return(rpc_failure);
+   }
    if ( argc > 1 ) {
-      if ( strcmp(argv[1], "get_projects") == 0 ) {
+      if ( 0 == strcmp(argv[1], "get_projects") ) {
          cout << getProjects(&rpc).str();
       }
-      else if ( strcmp(argv[1], "request_project") == 0 ) {
+      else if ( 0 ==  strcmp(argv[1], "request_project") ) {
          if ( argc == 3 ) {
             cout << requestProject( &rpc, string(argv[2], strlen(argv[2])) ).str();
+         } else {
+	    cerr << "Error: Expected another argument for request_project" << endl;
          }
       }
-      else if ( strcmp(argv[1], "get_tasks") == 0 ) {
+      else if ( 0 == strcmp(argv[1], "get_tasks") ) {
          cout << getTasks(&rpc).str();
       }
-      else if ( strcmp(argv[1], "update_tasks") == 0 ) {
+      else if ( 0 == strcmp(argv[1], "update_tasks") ) {
          cout << updateTasks(&rpc).str();
       }
-      else if ( strcmp(argv[1], "attach_project") == 0 ) {
+      else if ( 0 == strcmp(argv[1], "attach_project") ) {
          if ( argc == 5 ) {
             cout << attachProject(&rpc, argv[2], argv[3], argv[4]).str();
-         }
+         } else {
+	    cerr << "Error: Expected another three arguments for attach_project - see boinccmd --help" << endl;
+	 }
       } 
-      else if ( strcmp(argv[1], "get_statistics") == 0 ) {
+      else if ( 0 == strcmp(argv[1], "get_statistics") ) {
          cout << getStatistics(&rpc).str();
+      }
+      else {
+         cerr << "Error: Unknown command '" << argv[1] << "' - see --help" << endl;
       }
    }
 

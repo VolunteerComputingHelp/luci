@@ -163,6 +163,9 @@ function handleAction(ev, arg) {
          else if (statusJson.state == -206) {
             window.alert("Wrong password!\n\nPlease check the password you entered.");
          }
+         else if (statusJson.state == 99) {
+            window.alert("Failed to attach project. Reason unknown.");
+         }
          else {
             window.alert("A unknown Error occured!\n\nPlease try again later.");
          }
